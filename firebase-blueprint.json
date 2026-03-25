@@ -1,0 +1,69 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and statistics",
+      "type": "object",
+      "properties": {
+        "username": { "type": "string", "description": "Display name" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["Student", "Teacher", "Admin", "Guest"] },
+        "organization": { "type": "string" },
+        "avatarUrl": { "type": "string", "format": "uri" },
+        "totalScore": { "type": "integer" },
+        "streak": { "type": "integer" },
+        "accuracy": { "type": "number" },
+        "quizzesCompleted": { "type": "integer" },
+        "isPremium": { "type": "boolean" },
+        "balance": { "type": "number" },
+        "lastMissionUpdate": { "type": "string", "format": "date-time" }
+      },
+      "required": ["username", "email", "totalScore"]
+    },
+    "Quiz": {
+      "title": "Quiz",
+      "description": "Quiz content and metadata",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "difficulty": { "type": "string", "enum": ["Easy", "Medium", "Hard"] },
+        "category": { "type": "string" },
+        "duration": { "type": "integer", "description": "Duration in minutes" },
+        "creatorId": { "type": "string" },
+        "isPremium": { "type": "boolean" },
+        "qualityScore": { "type": "number" },
+        "upvotes": { "type": "integer" }
+      },
+      "required": ["title", "questionsArray", "difficulty", "category"]
+    },
+    "Result": {
+      "title": "Result",
+      "description": "Quiz attempt result",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "quizId": { "type": "string" },
+        "score": { "type": "integer" },
+        "totalQuestions": { "type": "integer" },
+        "timeTaken": { "type": "integer" },
+        "date": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "quizId", "score", "totalQuestions", "date"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/quizzes/{quizId}": {
+      "schema": "Quiz",
+      "description": "Available quizzes"
+    },
+    "/results/{resultId}": {
+      "schema": "Result",
+      "description": "Quiz results"
+    }
+  }
+}

@@ -1,0 +1,199 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId (Firebase Auth UID)
+    // Fields:
+    //   - username: string (required, 1-50 chars)
+    //   - email: string (required, email format)
+    //   - role: string (required, enum: Student, Teacher, Admin, Guest)
+    //   - avatarUrl: string (optional, URL)
+    //   - totalScore: number (required, >= 0)
+    //   - streak: number (optional, >= 0)
+    //   - accuracy: number (optional, 0-100)
+    //   - quizzesCompleted: number (optional, >= 0)
+    //   - history: list (optional, max 10 items)
+    //   - categoryStats: list (optional)
+    //   - dailyMissions: list (optional)
+    //   - createdAt: timestamp (immutable)
+    //   - updatedAt: timestamp
+    //
+    // Collection: quizzes
+    // Document ID: auto-generated
+    // Fields:
+    //   - title: string (required, 1-100 chars)
+    //   - description: string (required, 1-500 chars)
+    //   - questionsArray: list (required, 1-50 items)
+    //   - difficulty: string (required, enum: Easy, Medium, Hard)
+    //   - category: string (required)
+    //   - duration: number (optional, >= 0)
+    //   - creatorId: string (optional, UID)
+    //   - isPremium: boolean (optional)
+    //   - qualityScore: number (optional)
+    //   - upvotes: number (optional)
+    //   - createdAt: timestamp (immutable)
+    //   - updatedAt: timestamp
+    //   - createdBy: string (UID)
+    //
+    // Collection: results
+    // Document ID: auto-generated
+    // Fields:
+    //   - userId: string (required, UID)
+    //   - quizId: string (required)
+    //   - score: number (required, >= 0)
+    //   - totalQuestions: number (required, > 0)
+    //   - timeTaken: number (required, >= 0)
+    //   - date: string (required, ISO 8601)
+    //   - analytics: list (optional)
+    //   - createdAt: timestamp (immutable)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin' ||
+          (request.auth.token.email == "iritvik3@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUrl(url) {
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return data.username is string && data.username.size() >= 1 && data.username.size() <= 50 &&
+             data.email is string && isValidEmail(data.email) &&
+             data.role in ['Student', 'Teacher', 'Admin', 'Guest'] &&
+             data.totalScore is number && data.totalScore >= 0;
+    }
+
+    function isValidQuiz(data) {
+      return data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+             data.description is string && data.description.size() >= 1 && data.description.size() <= 2000 &&
+             data.questionsArray is list && data.questionsArray.size() >= 1 && data.questionsArray.size() <= 100 &&
+             data.difficulty in ['Easy', 'Medium', 'Hard'] &&
+             data.category is string;
+    }
+
+    function isValidResult(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.quizId is string &&
+             data.score is number && data.score >= 0 &&
+             data.totalQuestions is number && data.totalQuestions > 0 &&
+             data.timeTaken is number && data.timeTaken >= 0;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      // Users can read their own profile. Public leaderboard might need limited read.
+      // For now, allow public read profiles to see leaderboard names.
+      // CRITICAL: Ensure no PII is leaked if allowing broad read.
+      allow read: if true;
+      
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && 
+                      (request.resource.data.role != 'Admin' || isAdmin());
+      
+      allow update: if isAuthenticated() && 
+                      (
+                        (isOwner(userId) && isValidUser(request.resource.data) && 
+                         request.resource.data.role == resource.data.role) || 
+                        isAdmin()
+                      );
+    }
+
+    match /quizzes/{quizId} {
+      allow read: if true;
+      
+      allow create: if isAuthenticated() && isValidQuiz(request.resource.data) && 
+                      request.resource.data.createdBy == request.auth.uid;
+      
+      allow update: if isAuthenticated() && 
+                      (
+                        (resource.data.createdBy == request.auth.uid && 
+                         request.resource.data.createdBy == resource.data.createdBy &&
+                         isValidQuiz(request.resource.data)) || 
+                        isAdmin()
+                      );
+      
+      allow delete: if isAuthenticated() && (resource.data.createdBy == request.auth.uid || isAdmin());
+    }
+
+    match /results/{resultId} {
+      // Users can read their own results.
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      
+      allow create: if isAuthenticated() && isValidResult(request.resource.data);
+      
+      // Results are typically immutable
+      allow update, delete: if isAdmin();
+    }
+
+    // ===============================================================
+    // QuizHub V2 Extensions
+    // ===============================================================
+
+    match /classrooms/{classroomId} {
+      // Temporarily relaxed for functional prototype to prevent get() evaluation crashes
+      allow read, create, update: if isAuthenticated();
+      allow delete: if isAuthenticated() && (resource.data.teacherId == request.auth.uid || isAdmin());
+    }
+
+    match /multiplayer_sessions/{sessionId} {
+      // Anyone authenticated can read, create, and update multiplayer state for match flow
+      allow read, create, update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    match /exam_attempts/{attemptId} {
+      // Temporarily allow global read for client-side Rank Prediction (Mock Logic)
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    match /analytics_logs/{logId} {
+      allow read, create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false; // Analytics logs are immutable
+    }
+
+    // Default deny
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

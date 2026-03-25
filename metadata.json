@@ -1,0 +1,5 @@
+{
+  "name": "Quiz",
+  "description": "A dynamic quiz platform where users can play pre-made quizzes or generate new ones using AI. Features real-time scoring, leaderboards, and social sharing.",
+  "requestFramePermissions": []
+}
