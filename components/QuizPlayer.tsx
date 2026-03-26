@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Quiz, Question, QuestionAnalytics } from '../types';
+import { Quiz, Question, QuestionAnalytics, User } from '../types';
 import { submitQuizResult } from '../services/firebaseService';
 import { auth } from '../firebase';
 import { getAIExplanation } from '../services/geminiService';
@@ -8,7 +8,7 @@ import { Timer, CheckCircle, XCircle, ArrowRight, AlertCircle, LogOut, HelpCircl
 
 interface QuizPlayerProps {
   quiz: Quiz;
-  onComplete: (resultId: string, score: number, total: number) => void;
+  onComplete: (resultId: string, score: number, total: number, user: User) => void;
   onExit: () => void;
 }
 
@@ -122,7 +122,7 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({ quiz, onComplete, onExit }) => 
         totalDuration - timeRemaining,
         questionAnalytics
       );
-      onComplete(response.result._id, response.result.score, quiz.questionsArray.length * 10);
+      onComplete(response.result._id, response.result.score, quiz.questionsArray.length * 10, response.user);
     } catch (error) {
       console.error("Failed to submit", error);
       alert("Failed to submit quiz. Please try again.");
