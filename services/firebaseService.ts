@@ -153,6 +153,14 @@ export const loginAsGuest = async (): Promise<User> => {
 };
 
 export const logout = async () => {
+  const user = auth.currentUser;
+  if (user && user.isAnonymous) {
+    // Mark for deletion in 24 hours
+    const userRef = doc(db, 'users', user.uid);
+    await updateDoc(userRef, { 
+      deleteAt: Timestamp.fromDate(new Date(Date.now() + 24 * 60 * 60 * 1000)) 
+    }).catch(console.error);
+  }
   await signOut(auth);
 };
 
@@ -195,6 +203,13 @@ const syncUserProfile = async (firebaseUser: FirebaseUser): Promise<User> => {
     
     if (userDoc.exists()) {
       const userData = userDoc.data() as User;
+      
+      // Ensure daily missions exist for existing users
+      if (!userData.dailyMissions) {
+        userData.dailyMissions = generateDailyMissions();
+        updateDoc(userDocRef, { dailyMissions: userData.dailyMissions }).catch(console.error);
+      }
+
       if (firebaseUser.email === 'iritvik3@gmail.com' && userData.role !== 'Admin') {
         userData.role = 'Admin';
         // Non-blocking update to firestore
@@ -278,7 +293,7 @@ export const submitQuizResult = async (
   answers: number[],
   duration: number,
   analytics: QuestionAnalytics[]
-): Promise<{ result: Result }> => {
+): Promise<{ result: Result, user: User }> => {
   try {
     // 1. Get Quiz and User
     const quizDoc = await getDoc(doc(db, 'quizzes', quizId));
@@ -380,7 +395,7 @@ export const submitQuizResult = async (
       timestamp: new Date()
     });
 
-    return { result };
+    return { result, user: updatedUser };
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, 'results/users');
     throw error;
