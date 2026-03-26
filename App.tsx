@@ -217,49 +217,70 @@ const Dashboard: React.FC<{
           </button>
       </div>
 
-      {/* Recent Activity Section */}
-      {currentUser.history && currentUser.history.length > 0 && (
-        <div className="mb-14 grid grid-cols-1 lg:grid-cols-2 gap-8 animate-slide-up" style={{ animationDelay: '150ms' }}>
-          <div className="space-y-6">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xl font-black text-slate-800 dark:text-emerald-100 uppercase tracking-wider flex items-center gap-3">
-                <Clock size={20} className="text-emerald-500" />
-                Recent Activity
-              </h3>
+      {/* Recent Activity & Missions Section */}
+      <div className="mb-14 grid grid-cols-1 lg:grid-cols-2 gap-8 animate-slide-up" style={{ animationDelay: '150ms' }}>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xl font-black text-slate-800 dark:text-emerald-100 uppercase tracking-wider flex items-center gap-3">
+              <Clock size={20} className="text-emerald-500" />
+              Recent Activity
+            </h3>
+            {currentUser.history && currentUser.history.length > 0 && (
               <button onClick={onViewProfile} className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest hover:underline">View All History</button>
-            </div>
-            
-            <div className="glass-panel p-8 rounded-[2.5rem] border border-white/50 dark:border-white/5 flex flex-col items-center justify-between gap-6 h-full">
-              <div className="flex items-center gap-6 w-full">
-                <div className="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-600">
-                  <CheckCircle2 size={32} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Last Challenge</p>
-                  <h4 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{currentUser.history[0].quizTitle}</h4>
-                  <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Score: {currentUser.history[0].score} / {currentUser.history[0].total}</p>
-                </div>
-              </div>
-              <div className="flex gap-3 w-full">
-                <button 
-                  onClick={() => onReviewQuiz(currentUser.history![0])}
-                  className="flex-1 px-8 py-4 bg-emerald-600/10 text-emerald-600 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-emerald-600 hover:text-white transition-all"
-                >
-                  Review Quiz
-                </button>
-                <button 
-                  onClick={() => onStudyQuiz(currentUser.history![0])}
-                  className="flex-1 px-8 py-4 bg-violet-600/10 text-violet-600 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-violet-600 hover:text-white transition-all"
-                >
-                  Study Mode
-                </button>
-              </div>
-            </div>
+            )}
           </div>
-
-          <DailyMissions user={currentUser} onUpdate={onUpdateUser} />
+          
+          <div className="glass-panel p-6 rounded-[2.5rem] border border-white/50 dark:border-white/5 flex flex-col gap-4 h-full min-h-[220px]">
+            {currentUser.history && currentUser.history.length > 0 ? (
+              <div className="space-y-4 w-full pr-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                {currentUser.history.map((item, idx) => (
+                  <div key={idx} className="p-4 bg-white/50 dark:bg-emerald-950/10 border border-slate-100 dark:border-emerald-800/20 rounded-2xl flex items-center justify-between group hover:bg-white dark:hover:bg-emerald-900/20 transition-all">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-600">
+                        <CheckCircle2 size={20} />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-black text-slate-900 dark:text-white line-clamp-1">{item.quizTitle}</h4>
+                        <div className="flex items-center gap-2 mt-0.5">
+                           <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full">{item.score}/{item.total}</span>
+                           <span className="text-[10px] text-slate-400 font-medium">{new Date(item.date).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 lg:opacity-0 group-hover:opacity-100 transition-opacity">
+                       <button 
+                         onClick={() => onReviewQuiz(item)}
+                         className="p-2 bg-emerald-600/10 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-all"
+                         title="Review"
+                       >
+                         <Target size={14} />
+                       </button>
+                       <button 
+                         onClick={() => onStudyQuiz(item)}
+                         className="p-2 bg-violet-600/10 text-violet-600 hover:bg-violet-600 hover:text-white rounded-lg transition-all"
+                         title="Study"
+                       >
+                         <Sparkles size={14} />
+                       </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6 px-4">
+                <div className="w-16 h-16 bg-slate-100 dark:bg-emerald-900/20 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400 dark:text-emerald-700">
+                  <Sparkles size={24} />
+                </div>
+                <p className="text-slate-500 dark:text-emerald-200/40 text-sm font-bold max-w-[200px] mx-auto italic">
+                  Complete your first challenge to see your activity summary here!
+                </p>
+              </div>
+            )}
+          </div>
         </div>
-      )}
+
+        <DailyMissions user={currentUser} onUpdate={onUpdateUser} />
+      </div>
 
       {/* Explore Section */}
       <div className="animate-slide-up" style={{ animationDelay: '200ms' }}>
@@ -561,8 +582,9 @@ const App: React.FC = () => {
         return (
           <QuizPlayer 
             quiz={activeQuiz} 
-            onComplete={(id, score, total) => {
+            onComplete={(id, score, total, user) => {
               setResultData({ id, score, total });
+              if (user) setCurrentUser(user);
               setView('RESULT');
             }}
             onExit={() => setView('HOME')}
