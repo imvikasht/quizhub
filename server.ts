@@ -5,11 +5,75 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import { createServer } from 'http';
+import admin from 'firebase-admin';
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Initialize Firebase Admin for background cleanup
+try {
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+    });
+    console.log('Firebase Admin initialized with service account.');
+  } else {
+    // Fallback to project ID if running in environment with default credentials
+    admin.initializeApp({
+      projectId: 'gen-lang-client-0135509206'
+    });
+    console.log('Firebase Admin initialized with project ID (Auth deletion may require service account).');
+  }
+} catch (error) {
+  console.error('Firebase Admin initialization failed:', error);
+}
+
+// Background Task: Cleanup Guest Accounts marked for deletion (> 24h ago)
+async function cleanupGuestAccounts() {
+  console.log('Running guest account cleanup check...');
+  try {
+    const db = admin.firestore();
+    const now = new Date();
+    
+    // Find users where deleteAt is less than or equal to now
+    const snapshot = await db.collection('users')
+      .where('deleteAt', '<=', admin.firestore.Timestamp.fromDate(now))
+      .get();
+
+    if (snapshot.empty) {
+      console.log('No guest accounts to delete.');
+      return;
+    }
+
+    console.log(`Found ${snapshot.size} guest accounts to delete.`);
+
+    for (const doc of snapshot.docs) {
+      const userId = doc.id;
+      
+      // 1. Delete Firestore User Doc
+      await doc.ref.delete();
+      console.log(`Deleted Firestore doc for user: ${userId}`);
+
+      // 2. Attempt to delete Auth record (requires valid admin credentials)
+      try {
+        await admin.auth().deleteUser(userId);
+        console.log(`Deleted Auth record for user: ${userId}`);
+      } catch (authError) {
+        // This fails if service account is not fully configured, but we still cleaned Firestore
+        console.warn(`Could not delete Auth record for ${userId} (Service Account might be missing):`, authError instanceof Error ? authError.message : authError);
+      }
+    }
+  } catch (error) {
+    console.error('Cleanup task error:', error);
+  }
+}
+
+// Run cleanup once on startup and then every hour
+cleanupGuestAccounts();
+setInterval(cleanupGuestAccounts, 60 * 60 * 1000);
 
 async function startServer() {
   const app = express();
