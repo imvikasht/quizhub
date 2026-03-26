@@ -5,7 +5,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import { createServer } from 'http';
-import admin from 'firebase-admin';
+import { initializeApp, cert } from 'firebase-admin/app';
+import { getFirestore, Timestamp as AdminTimestamp } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 
 dotenv.config();
 
@@ -16,13 +18,13 @@ const __dirname = path.dirname(__filename);
 try {
   if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
+    initializeApp({
+      credential: cert(serviceAccount),
     });
     console.log('Firebase Admin initialized with service account.');
   } else {
     // Fallback to project ID if running in environment with default credentials
-    admin.initializeApp({
+    initializeApp({
       projectId: 'gen-lang-client-0135509206'
     });
     console.log('Firebase Admin initialized with project ID (Auth deletion may require service account).');
@@ -35,12 +37,13 @@ try {
 async function cleanupGuestAccounts() {
   console.log('Running guest account cleanup check...');
   try {
-    const db = admin.firestore();
+    const db = getFirestore();
+    const authAdmin = getAuth();
     const now = new Date();
     
     // Find users where deleteAt is less than or equal to now
     const snapshot = await db.collection('users')
-      .where('deleteAt', '<=', admin.firestore.Timestamp.fromDate(now))
+      .where('deleteAt', '<=', AdminTimestamp.fromDate(now))
       .get();
 
     if (snapshot.empty) {
@@ -59,7 +62,7 @@ async function cleanupGuestAccounts() {
 
       // 2. Attempt to delete Auth record (requires valid admin credentials)
       try {
-        await admin.auth().deleteUser(userId);
+        await authAdmin.deleteUser(userId);
         console.log(`Deleted Auth record for user: ${userId}`);
       } catch (authError) {
         // This fails if service account is not fully configured, but we still cleaned Firestore
