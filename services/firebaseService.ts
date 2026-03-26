@@ -7,6 +7,7 @@ import {
   signInWithEmailAndPassword,
   signInAnonymously,
   updateProfile,
+  sendPasswordResetEmail,
   User as FirebaseUser 
 } from 'firebase/auth';
 import { 
@@ -153,6 +154,15 @@ export const loginAsGuest = async (): Promise<User> => {
 
 export const logout = async () => {
   await signOut(auth);
+};
+
+export const resetPassword = async (email: string): Promise<void> => {
+  try {
+    await sendPasswordResetEmail(auth, email);
+  } catch (error) {
+    console.error("Password reset failed", error);
+    throw error;
+  }
 };
 
 export const onAuthChange = (callback: (user: User | null) => void) => {
