@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { loginWithGoogle, loginWithEmail, registerWithEmail, loginAsGuest } from '../services/firebaseService';
+import { loginWithGoogle, loginWithEmail, registerWithEmail, loginAsGuest, resetPassword } from '../services/firebaseService';
 import { User } from '../types';
-import { Zap, Mail, Lock, User as UserIcon, Building2, GraduationCap, ArrowRight, Loader2, Globe, ArrowLeft } from 'lucide-react';
+import { Zap, Mail, Lock, User as UserIcon, Building2, GraduationCap, ArrowRight, Loader2, Globe, ArrowLeft, Send } from 'lucide-react';
 
 interface AuthProps {
   onSuccess: (user: User) => void;
@@ -10,8 +10,10 @@ interface AuthProps {
 
 const Auth: React.FC<AuthProps> = ({ onSuccess, onCancel }) => {
   const [isLogin, setIsLogin] = useState(true);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   // Form State
   const [email, setEmail] = useState('');
@@ -23,6 +25,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, onCancel }) => {
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError('');
+    setSuccess('');
     try {
       const user = await loginWithGoogle();
       onSuccess(user);
@@ -36,6 +39,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, onCancel }) => {
   const handleGuestLogin = async () => {
     setLoading(true);
     setError('');
+    setSuccess('');
     try {
       const user = await loginAsGuest();
       onSuccess(user);
@@ -46,10 +50,31 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, onCancel }) => {
     }
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      setError('Please enter your email address');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      await resetPassword(email);
+      setSuccess('Password reset link sent to your email!');
+      setTimeout(() => setIsForgotPassword(false), 3000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to send reset email');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccess('');
     
     try {
       if (isLogin) {
@@ -78,9 +103,9 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, onCancel }) => {
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md glass-panel rounded-3xl shadow-2xl overflow-hidden animate-slide-up relative border border-white/10">
         
-        {onCancel && (
+        {(onCancel || isForgotPassword) && (
           <button 
-            onClick={onCancel}
+            onClick={isForgotPassword ? () => setIsForgotPassword(false) : onCancel}
             className="absolute top-4 left-4 z-20 p-2 bg-black/10 hover:bg-black/20 text-white rounded-full transition-colors backdrop-blur-sm"
           >
             <ArrowLeft size={20} />
@@ -96,128 +121,180 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, onCancel }) => {
             </div>
             <h1 className="text-3xl font-bold text-white tracking-tight">QuizHub</h1>
             <p className="text-emerald-100 mt-2 text-sm font-medium">
-              {isLogin ? 'Power up your knowledge!' : 'Ignite your learning journey.'}
+              {isForgotPassword ? 'Reset your password' : (isLogin ? 'Power up your knowledge!' : 'Ignite your learning journey.')}
             </p>
           </div>
         </div>
 
         {/* Form */}
         <div className="p-8">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            
-            {error && (
-              <div className="p-3 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-300 text-sm rounded-xl border border-rose-100 dark:border-rose-800 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                {error}
-              </div>
-            )}
-
-            {!isLogin && (
-              <div className="space-y-4 animate-fade-in">
-                 <div className="relative">
-                  <UserIcon className="absolute left-4 top-3.5 text-slate-400 dark:text-emerald-700" size={18} />
-                  <input 
-                    type="text" 
-                    placeholder="Full Name"
-                    value={username}
-                    onChange={e => setUsername(e.target.value)}
-                    className={inputStyles}
-                  />
+          {isForgotPassword ? (
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              {error && (
+                <div className="p-3 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-300 text-sm rounded-xl border border-rose-100 dark:border-rose-800 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                  {error}
                 </div>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setRole('Student')}
-                    className={`flex items-center justify-center gap-2 py-3 rounded-xl border transition-all ${role === 'Student' ? 'bg-emerald-50 dark:bg-emerald-900/40 border-emerald-500 text-emerald-700 dark:text-emerald-300' : 'bg-slate-50 dark:bg-emerald-900/10 border-slate-200 dark:border-emerald-800/20 text-slate-500 dark:text-emerald-600'}`}
-                  >
-                    <GraduationCap size={18} />
-                    <span className="text-sm font-semibold">Student</span>
-                  </button>
-                   <button
-                    type="button"
-                    onClick={() => setRole('Teacher')}
-                    className={`flex items-center justify-center gap-2 py-3 rounded-xl border transition-all ${role === 'Teacher' ? 'bg-emerald-50 dark:bg-emerald-900/40 border-emerald-500 text-emerald-700 dark:text-emerald-300' : 'bg-slate-50 dark:bg-emerald-900/10 border-slate-200 dark:border-emerald-800/20 text-slate-500 dark:text-emerald-600'}`}
-                  >
-                    <UserIcon size={18} />
-                    <span className="text-sm font-semibold">Teacher</span>
-                  </button>
-                </div>
-
-                <div className="relative">
-                  <Building2 className="absolute left-4 top-3.5 text-slate-400 dark:text-emerald-700" size={18} />
-                  <input 
-                    type="text" 
-                    placeholder="School / Organization Name"
-                    value={organization}
-                    onChange={e => setOrganization(e.target.value)}
-                    className={inputStyles}
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="relative">
-              <Mail className="absolute left-4 top-3.5 text-slate-400 dark:text-emerald-700" size={18} />
-              <input 
-                type="email" 
-                placeholder="Email Address"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                className={inputStyles}
-              />
-            </div>
-
-            <div className="relative">
-              <Lock className="absolute left-4 top-3.5 text-slate-400 dark:text-emerald-700" size={18} />
-              <input 
-                type="password" 
-                placeholder="Password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className={inputStyles}
-              />
-            </div>
-
-            <button 
-              type="submit"
-              disabled={loading}
-              className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-widest text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2"
-            >
-              {loading ? <Loader2 className="animate-spin" /> : (isLogin ? 'Sign In' : 'Create Account')}
-            </button>
-
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200 dark:border-emerald-800/30"></div>
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white dark:bg-[#06110f] px-2 text-slate-400 dark:text-emerald-700 font-black tracking-widest">Or</span>
-              </div>
-            </div>
-
-            <button 
-              type="button"
-              onClick={handleGoogleLogin}
-              disabled={loading}
-              className="w-full py-4 bg-white dark:bg-white/10 hover:bg-slate-50 dark:hover:bg-white/20 text-slate-900 dark:text-white font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-3 mt-2 border border-slate-200 dark:border-white/10"
-            >
-              {loading ? (
-                <Loader2 className="animate-spin" />
-              ) : (
-                <>
-                  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
-                  Continue with Google
-                </>
               )}
-            </button>
-          </form>
+              {success && (
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-300 text-sm rounded-xl border border-emerald-100 dark:border-emerald-800 flex items-center gap-2">
+                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                   {success}
+                </div>
+              )}
+              <div className="relative">
+                <Mail className="absolute left-4 top-3.5 text-slate-400 dark:text-emerald-700" size={18} />
+                <input 
+                  type="email" 
+                  placeholder="Email Address"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  className={inputStyles}
+                  required
+                />
+              </div>
+              <button 
+                type="submit"
+                disabled={loading}
+                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-widest text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2"
+              >
+                {loading ? <Loader2 className="animate-spin" /> : (
+                  <>
+                    <Send size={16} />
+                    Send Reset Link
+                  </>
+                )}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              
+              {error && (
+                <div className="p-3 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-300 text-sm rounded-xl border border-rose-100 dark:border-rose-800 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                  {error}
+                </div>
+              )}
+
+              {!isLogin && (
+                <div className="space-y-4 animate-fade-in">
+                   <div className="relative">
+                    <UserIcon className="absolute left-4 top-3.5 text-slate-400 dark:text-emerald-700" size={18} />
+                    <input 
+                      type="text" 
+                      placeholder="Full Name"
+                      value={username}
+                      onChange={e => setUsername(e.target.value)}
+                      className={inputStyles}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setRole('Student')}
+                      className={`flex items-center justify-center gap-2 py-3 rounded-xl border transition-all ${role === 'Student' ? 'bg-emerald-50 dark:bg-emerald-900/40 border-emerald-500 text-emerald-700 dark:text-emerald-300' : 'bg-slate-50 dark:bg-emerald-900/10 border-slate-200 dark:border-emerald-800/20 text-slate-500 dark:text-emerald-600'}`}
+                    >
+                      <GraduationCap size={18} />
+                      <span className="text-sm font-semibold">Student</span>
+                    </button>
+                     <button
+                      type="button"
+                      onClick={() => setRole('Teacher')}
+                      className={`flex items-center justify-center gap-2 py-3 rounded-xl border transition-all ${role === 'Teacher' ? 'bg-emerald-50 dark:bg-emerald-900/40 border-emerald-500 text-emerald-700 dark:text-emerald-300' : 'bg-slate-50 dark:bg-emerald-900/10 border-slate-200 dark:border-emerald-800/20 text-slate-500 dark:text-emerald-600'}`}
+                    >
+                      <UserIcon size={18} />
+                      <span className="text-sm font-semibold">Teacher</span>
+                    </button>
+                  </div>
+
+                  <div className="relative">
+                    <Building2 className="absolute left-4 top-3.5 text-slate-400 dark:text-emerald-700" size={18} />
+                    <input 
+                      type="text" 
+                      placeholder="School / Organization Name"
+                      value={organization}
+                      onChange={e => setOrganization(e.target.value)}
+                      className={inputStyles}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="relative">
+                <Mail className="absolute left-4 top-3.5 text-slate-400 dark:text-emerald-700" size={18} />
+                <input 
+                  type="email" 
+                  placeholder="Email Address"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  className={inputStyles}
+                />
+              </div>
+
+              <div className="relative">
+                <Lock className="absolute left-4 top-3.5 text-slate-400 dark:text-emerald-700" size={18} />
+                <input 
+                  type="password" 
+                  placeholder="Password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className={inputStyles}
+                />
+              </div>
+
+              {isLogin && (
+                <div className="flex justify-end">
+                  <button 
+                    type="button"
+                    onClick={() => setIsForgotPassword(true)}
+                    className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+              )}
+
+              <button 
+                type="submit"
+                disabled={loading}
+                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-widest text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2"
+              >
+                {loading ? <Loader2 className="animate-spin" /> : (isLogin ? 'Sign In' : 'Create Account')}
+              </button>
+
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-200 dark:border-emerald-800/30"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white dark:bg-[#06110f] px-2 text-slate-400 dark:text-emerald-700 font-black tracking-widest">Or</span>
+                </div>
+              </div>
+
+              <button 
+                type="button"
+                onClick={handleGoogleLogin}
+                disabled={loading}
+                className="w-full py-4 bg-white dark:bg-white/10 hover:bg-slate-50 dark:hover:bg-white/20 text-slate-900 dark:text-white font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-3 mt-2 border border-slate-200 dark:border-white/10"
+              >
+                {loading ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <>
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+                    Continue with Google
+                  </>
+                )}
+              </button>
+            </form>
+          )}
 
           <div className="mt-4 text-center">
               <p className="text-slate-500 dark:text-emerald-500 text-sm">
                 {isLogin ? "Don't have an account?" : "Already have an account?"}
                 <button 
-                  onClick={() => { setIsLogin(!isLogin); setError(''); }}
+                  onClick={() => { setIsLogin(!isLogin); setIsForgotPassword(false); setError(''); setSuccess(''); }}
                   className="ml-2 font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
                 >
                   {isLogin ? 'Register Now' : 'Sign In'}
@@ -225,7 +302,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, onCancel }) => {
               </p>
             </div>
           
-          {isLogin && (
+          {isLogin && !isForgotPassword && (
             <div className="mt-6 pt-4 border-t border-slate-100 dark:border-emerald-800/30 text-center">
                <button 
                  onClick={handleGuestLogin} 
