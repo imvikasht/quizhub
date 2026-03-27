@@ -37,7 +37,7 @@ try {
 async function cleanupGuestAccounts() {
   console.log('Running guest account cleanup check...');
   try {
-    const db = getFirestore();
+    const db = getFirestore('ai-studio-c5952f97-b105-420c-855c-9c3ae5f7745f');
     const authAdmin = getAuth();
     const now = new Date();
     
