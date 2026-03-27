@@ -341,17 +341,17 @@ const Dashboard: React.FC<{
                    <p className="text-slate-500 dark:text-emerald-200/60 text-sm line-clamp-3 leading-relaxed font-medium">{quiz.description}</p>
                  </div>
 
-                 <div className="pt-8 mt-6 border-t border-slate-100 dark:border-white/5 flex flex-wrap items-center justify-between gap-4 relative z-10">
+                 <div className="pt-8 mt-6 border-t border-slate-100 dark:border-white/5 flex flex-wrap items-center justify-between gap-2 relative z-10">
                    <div className="flex items-center gap-1.5 text-slate-400 dark:text-emerald-400/40 text-xs font-black uppercase tracking-widest whitespace-nowrap shrink-0">
                      <Clock size={14} />
                      <span>{quiz.duration || 5} Min</span>
                    </div>
                    
-                   <div className="flex items-center gap-3">
-                     <div className="flex items-center gap-2">
+                   <div className="flex items-center gap-1.5">
+                     <div className="flex items-center gap-1.5">
                        <button 
                          onClick={() => onShareQuiz(quiz)}
-                         className="flex items-center justify-center p-2.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-white/5 rounded-xl transition-all"
+                         className="flex items-center justify-center p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-white/5 rounded-xl transition-all"
                          title="Share Challenge"
                        >
                          <Share2 size={18} />
@@ -360,14 +360,14 @@ const Dashboard: React.FC<{
                          <>
                            <button 
                              onClick={() => onEditQuiz(quiz)}
-                             className="flex items-center justify-center p-2.5 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-white/5 rounded-xl transition-all"
+                             className="flex items-center justify-center p-2 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-white/5 rounded-xl transition-all"
                              title="Edit Challenge"
                            >
                              <Edit3 size={18} />
                            </button>
                            <button 
                              onClick={() => onDeleteQuiz(quiz)}
-                             className="flex items-center justify-center p-2.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-white/5 rounded-xl transition-all"
+                             className="flex items-center justify-center p-2 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-white/5 rounded-xl transition-all"
                              title="Delete Challenge"
                            >
                              <Trash2 size={18} />
@@ -379,15 +379,15 @@ const Dashboard: React.FC<{
                        <button 
                          onClick={() => onExamQuiz(quiz)}
                          title="Competitive Exam Mode"
-                         className="px-6 py-3 bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 border border-slate-200 dark:border-rose-500/20 text-xs font-black uppercase tracking-widest rounded-[1.25rem] shadow-sm hover:border-rose-500 hover:text-white hover:bg-rose-500 dark:hover:bg-rose-500 dark:hover:text-white transition-all flex items-center gap-2 transform active:scale-95"
+                         className="px-4 py-3 bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 border border-slate-200 dark:border-rose-500/20 text-[10px] font-black uppercase tracking-widest rounded-[1.25rem] shadow-sm hover:border-rose-500 hover:text-white hover:bg-rose-500 dark:hover:bg-rose-500 dark:hover:text-white transition-all flex items-center gap-1.5 transform active:scale-95 whitespace-nowrap"
                        >
-                         <ShieldAlert size={16} /> Exam
+                         <ShieldAlert size={14} /> Exam
                        </button>
                        <button 
                         onClick={() => onSelectQuiz(quiz)}
-                        className="px-6 py-3 bg-slate-900 dark:bg-emerald-600 text-white text-xs font-black uppercase tracking-widest rounded-[1.25rem] shadow-xl hover:bg-emerald-500 dark:hover:bg-emerald-500 hover:shadow-emerald-500/40 transition-all flex items-center gap-2 transform active:scale-90"
+                        className="px-4 py-3 bg-slate-900 dark:bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-[1.25rem] shadow-xl hover:bg-emerald-500 dark:hover:bg-emerald-500 hover:shadow-emerald-500/40 transition-all flex items-center gap-1.5 transform active:scale-90 whitespace-nowrap"
                        >
-                         <Play size={16} fill="currentColor" /> Play
+                         <Play size={14} fill="currentColor" /> Play
                        </button>
                      </div>
                    </div>
