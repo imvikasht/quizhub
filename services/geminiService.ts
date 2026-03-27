@@ -13,7 +13,7 @@ const getApiKey = () => {
 const ai = new GoogleGenAI({ apiKey: getApiKey() });
 
 export const generateQuizWithAI = async (topic: string, difficulty: string, numQuestions: number, duration: number, additionalDescription?: string, language: string = 'English'): Promise<Quiz> => {
-  
+
   const prompt = `Create a multiple choice quiz about "${topic}". 
   Language: ${language}.
   Difficulty: ${difficulty}. 
